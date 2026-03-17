@@ -244,7 +244,7 @@ async function processAuth(e) {
     });
 
     if (error) {
-        alert(error.message);
+        alert("Login Failed: " + error.message);
     } else {
         loginUser(data.user.user_metadata.full_name);
         fetchLogs();
