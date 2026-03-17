@@ -172,36 +172,44 @@
 const SUPABASE_URL = 'https://tdolsxearkrcgenwnyst.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkb2xzeGVhcmtyY2dlbndueXN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NjM5NDAsImV4cCI6MjA4OTMzOTk0MH0.gMBa3hUC22GXoL5avUgKZuaN_7jnFNpktuFFH_mpypg';
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// --- APP STATE ---
-let isLoggedIn = false;
-let logs = [];
-let isClockedIn = false;
-let clockInTime = null;
-let timerInterval = null;
-let authMode = 'login';
+// --- AUTH LOGIC ---
+async function processAuth(e) {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-pass').value;
+    const name = document.getElementById('auth-name').value;
 
-// --- NAVIGATION ---
-function navigateTo(view) {
-    document.getElementById('view-home').classList.add('hidden');
-    document.getElementById('view-auth').classList.add('hidden');
-    document.getElementById('view-tracker').classList.add('hidden');
-    document.getElementById('nav-home').classList.remove('active-nav');
-    document.getElementById('nav-tracker').classList.remove('active-nav');
+    if (authMode === 'register') {
+        const { data, error } = await db.auth.signUp({
+            email, 
+            password, 
+            options: { data: { full_name: name } }
+        });
+        if (error) alert(error.message);
+        else alert("Check your email for confirmation!");
+    } else {
+        const { data, error } = await db.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
 
-    if (view === 'home') {
-        document.getElementById('view-home').classList.remove('hidden');
-        document.getElementById('nav-home').classList.add('active-nav');
-    } else if (view === 'tracker') {
-        document.getElementById('nav-tracker').classList.add('active-nav');
-        if (isLoggedIn) {
-            document.getElementById('view-tracker').classList.remove('hidden');
+        if (error) {
+            alert("Login Failed: " + error.message);
         } else {
-            document.getElementById('view-auth').classList.remove('hidden');
+            handleSuccessfulLogin(data.user);
         }
     }
 }
+
+window.onload = async () => {
+    const { data: { session }, error } = await db.auth.getSession();
+    
+    if (session && session.user) {
+        handleSuccessfulLogin(session.user);
+    }
+};
 
 async function logout() {
     await db.auth.signOut();
@@ -210,7 +218,7 @@ async function logout() {
     navigateTo('home');
 }
 
-// --- AUTH LOGIC (Updated for compatibility) ---
+// --- AUTH LOGIC ---
 async function processAuth(e) {
     e.preventDefault();
     const email = document.getElementById('auth-email').value;
@@ -224,14 +232,12 @@ async function processAuth(e) {
         if (error) alert(error.message);
         else showWelcomeModal();
     } else {
-        // Using the more universal .signIn method
         const { data, error } = await db.auth.signInWithPassword({ 
             email: email, 
             password: password 
         });
 
         if (error) {
-            // Fallback for older library versions
             const fallback = await db.auth.signIn({ email, password });
             if (fallback.error) {
                 alert("Login Failed: " + fallback.error.message);
@@ -260,7 +266,7 @@ function loginUser(name) {
 // --- TRACKER LOGIC ---
 async function fetchLogs() {
     try {
-        const user = db.auth.user(); // Standard v1/v2 user fetch
+        const user = db.auth.user();
         if (!user) return;
 
         const { data, error } = await db
