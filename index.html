@@ -241,24 +241,27 @@ async function processAuth(e) {
     const password = document.getElementById('auth-pass').value;
     const name = document.getElementById('auth-name').value;
 
-    if (authMode === 'register') {
-        const { data, error } = await db.auth.signUp({
-            email, password, options: { data: { full_name: name } }
-        });
-        if (error) alert(error.message);
-        else showWelcomeModal();
-    } else {
-        const { data, error } = await db.auth.signInWithPassword({ 
-            email: email, 
-            password: password 
-        });
-
-        if (error) {
-            alert("Login Failed: " + error.message);
+    try {
+        if (authMode === 'register') {
+            const { data, error } = await db.auth.signUp({
+                email, password, options: { data: { full_name: name } }
+            });
+            if (error) throw error;
+            showWelcomeModal();
         } else {
-            loginUser(data.user.user_metadata.full_name);
+            const { data, error } = await db.auth.signIn({ 
+                email: email, 
+                password: password 
+            });
+
+            if (error) throw error;
+            
+            loginUser(data.user.user_metadata.full_name || "User");
             fetchLogs();
         }
+    } catch (err) {
+        alert("Auth Error: " + err.message);
+        console.error(err);
     }
 }
 
