@@ -238,13 +238,18 @@ async function processAuth(e) {
         if (error) alert(error.message);
         else showWelcomeModal();
     } else {
-        const { data, error } = await db.signInWithPassword({ email, password });
-        if (error) alert(error.message);
-        else {
-            loginUser(data.user.user_metadata.full_name);
-            fetchLogs();
-        }
+    const { data, error } = await db.auth.signInWithPassword({ 
+        email: email, 
+        password: password 
+    });
+
+    if (error) {
+        alert(error.message);
+    } else {
+        loginUser(data.user.user_metadata.full_name);
+        fetchLogs();
     }
+}
 }
 
 function loginUser(name) {
