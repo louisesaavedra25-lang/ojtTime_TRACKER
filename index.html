@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OJT Tracker | Professional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #F4F5F9; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .active-nav { color: #8B5CF6; font-weight: 700; border-bottom: 2px solid #8B5CF6; }
+    </style>
+</head>
+<body class="text-gray-800 h-screen flex flex-col">
+
+    <nav class="bg-white shadow-sm px-8 py-4 flex justify-between items-center z-10">
+        <div class="flex space-x-8 font-medium text-gray-500">
+            <button onclick="navigateTo('home')" id="nav-home" class="active-nav pb-1 transition">Home</button>
+            <button onclick="navigateTo('tracker')" id="nav-tracker" class="pb-1 hover:text-purple-600 transition">OJT Tracker</button>
+        </div>
+
+        <div class="flex items-center space-x-3 text-purple-600">
+            <span class="text-xl font-bold tracking-wide text-gray-800">OJT Tracker</span>
+            <div class="bg-purple-600 text-white p-2 rounded-lg shadow-md">
+                <i class="fa-solid fa-graduation-cap text-xl"></i>
+            </div>
+            <div id="user-display" class="hidden border-l pl-4 ml-4 flex items-center gap-2">
+                <span id="user-name-text" class="text-sm font-semibold text-gray-600"></span>
+                <button onclick="logout()" class="text-xs text-red-400 hover:underline">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 overflow-y-auto p-8">
+        <div id="view-home" class="fade-in max-w-4xl mx-auto mt-16 text-center">
+            <h1 class="text-5xl font-extrabold text-gray-800 mb-6">Welcome to your Internship Journey</h1>
+            <p class="text-lg text-gray-500 mb-8">This focuses in tracking your hours, and monitor your overall progress seamlessly. Navigate to the OJT Tracker to get started.</p>
+            <img src="https://illustrations.popsy.co/amber/student-going-to-school.svg" alt="Illustration" class="w-96 mx-auto">
+        </div>
+
+        <div id="view-auth" class="hidden fade-in max-w-md mx-auto mt-12">
+            <div class="bg-white p-10 rounded-[2.5rem] shadow-xl border border-gray-100">
+                <div class="flex bg-gray-100 p-1 rounded-2xl mb-8">
+                    <button onclick="toggleAuth('login')" id="tab-login" class="flex-1 py-2 rounded-xl text-sm font-bold transition-all bg-white shadow-sm text-purple-600">Log In</button>
+                    <button onclick="toggleAuth('register')" id="tab-register" class="flex-1 py-2 rounded-xl text-sm font-bold transition-all text-gray-500 hover:text-gray-700">Register</button>
+                </div>
+
+                <div class="text-center mb-8">
+                    <h2 id="auth-title" class="text-2xl font-extrabold text-gray-800">Welcome Back</h2>
+                    <p id="auth-subtitle" class="text-sm text-gray-500 mt-2">Log in to track your OJT hours.</p>
+                </div>
+
+                <form onsubmit="processAuth(event)" class="space-y-4">
+                    <div id="reg-fields" class="hidden">
+                        <label class="text-[10px] font-bold text-gray-400 ml-2 uppercase">Full Name</label>
+                        <input type="text" id="auth-name" placeholder="John Doe" class="w-full px-5 py-3 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-purple-500 outline-none bg-gray-50 transition-all">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 ml-2 uppercase">Email Address</label>
+                        <input type="email" id="auth-email" required placeholder="student@university.edu" class="w-full px-5 py-3 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-purple-500 outline-none bg-gray-50 transition-all">
+                    </div>
+
+                    <div class="relative">
+                        <label class="text-[10px] font-bold text-gray-400 ml-2 uppercase">Password</label>
+                        <div class="relative">
+                            <input type="password" id="auth-pass" required placeholder="••••••••" class="w-full px-5 py-3 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-purple-500 outline-none bg-gray-50 transition-all pr-12">
+                            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600 transition-colors">
+                                <i id="pass-icon" class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="auth-submit-btn" class="w-full bg-purple-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-purple-200 hover:bg-purple-700 hover:shadow-purple-300 transition-all mt-4 transform active:scale-95">
+                        Sign In
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="view-tracker" class="hidden fade-in max-w-5xl mx-auto space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-purple-600 rounded-3xl p-6 text-white shadow-xl flex flex-col justify-between">
+                    <p class="text-purple-100 text-sm font-semibold uppercase tracking-wider">Accumulated Hours</p>
+                    <h2 class="text-5xl font-bold mt-2" id="total-hours">0.00</h2>
+                    <p class="text-xs text-purple-200 mt-4 italic">Updated in real-time</p>
+                </div>
+
+                <div class="md:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-bold uppercase">Current Session</h3>
+                        <div id="live-timer" class="text-4xl font-mono font-bold text-gray-800 mt-1">00:00:00</div>
+                    </div>
+                    <button id="clock-btn" onclick="toggleClock()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-4 rounded-2xl font-bold shadow-lg transition-all transform active:scale-95">
+                        <i class="fa-solid fa-play mr-2"></i> Clock In
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fa-solid fa-calendar-plus text-purple-500 mr-2"></i>Log Past Hours</h3>
+                <form onsubmit="handleManualEntry(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-gray-400">DATE</label>
+                        <input type="date" id="m-date" required class="w-full p-2.5 rounded-xl border bg-gray-50 outline-none focus:border-purple-400">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-gray-400">TIME IN</label>
+                        <input type="time" id="m-in" required class="w-full p-2.5 rounded-xl border bg-gray-50 outline-none focus:border-purple-400">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-gray-400">TIME OUT</label>
+                        <input type="time" id="m-out" required class="w-full p-2.5 rounded-xl border bg-gray-50 outline-none focus:border-purple-400">
+                    </div>
+                    <button type="submit" class="bg-gray-800 text-white py-3 rounded-xl font-bold hover:bg-black transition shadow-md">Add to Log</button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="p-6 border-b border-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800">Time Log History</h3>
+                    <span class="text-xs text-gray-400">Sorted by most recent</span>
+                </div>
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Clock In</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Clock Out</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-body" class="divide-y divide-gray-100"></tbody>
+                </table>
+                <div id="empty-state" class="py-12 text-center text-gray-400">
+                    <i class="fa-solid fa-folder-open text-3xl mb-2 block opacity-20"></i>
+                    No hours logged yet.
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="welcome-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 fade-in">
+        <div class="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl transform text-center border border-gray-100">
+            <h3 class="text-2xl font-black text-gray-800 mb-6 tracking-widest uppercase">PLEASE READ</h3>
+            <div class="space-y-4 mb-10">
+                <p class="text-gray-600 leading-relaxed italic text-lg">
+                    "Hi, this is SvdraL... you can freely use this website as your OJT time tracker. Hopefully, you'll appreciate it. Have fun and good luck!"
+                </p>
+            </div>
+            <button onclick="confirmWelcome()" class="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl hover:bg-black transition-all shadow-lg transform active:scale-95">
+                Confirm
+            </button>
+        </div>
+    </div>
+
+    <script>
+// --- DATABASE CONFIG ---
+const SUPABASE_URL = 'https://tdolsxearkrcgenwnyst.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkb2xzeGVhcmtyY2dlbndueXN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NjM5NDAsImV4cCI6MjA4OTMzOTk0MH0.gMBa3hUC22GXoL5avUgKZuaN_7jnFNpktuFFH_mpypg';
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// --- APP STATE ---
+let isLoggedIn = false;
+let logs = [];
+let isClockedIn = false;
+let clockInTime = null;
+let timerInterval = null;
+let authMode = 'login';
+
+// --- NAVIGATION ---
+function navigateTo(view) {
+    document.getElementById('view-home').classList.add('hidden');
+    document.getElementById('view-auth').classList.add('hidden');
+    document.getElementById('view-tracker').classList.add('hidden');
+    document.getElementById('nav-home').classList.remove('active-nav');
+    document.getElementById('nav-tracker').classList.remove('active-nav');
+
+    if (view === 'home') {
+        document.getElementById('view-home').classList.remove('hidden');
+        document.getElementById('nav-home').classList.add('active-nav');
+    } else if (view === 'tracker') {
+        document.getElementById('nav-tracker').classList.add('active-nav');
+        if (isLoggedIn) {
+            document.getElementById('view-tracker').classList.remove('hidden');
+        } else {
+            document.getElementById('view-auth').classList.remove('hidden');
+        }
+    }
+}
+
+async function logout() {
+    await db.auth.signOut();
+    isLoggedIn = false;
+    document.getElementById('user-display').classList.add('hidden');
+    navigateTo('home');
+}
+
+// --- AUTH LOGIC ---
+function toggleAuth(mode) {
+    authMode = mode;
+    const regFields = document.getElementById('reg-fields');
+    const authTitle = document.getElementById('auth-title');
+    const authBtn = document.getElementById('auth-submit-btn');
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+
+    if (mode === 'register') {
+        regFields.classList.remove('hidden');
+        authTitle.innerText = "Create Account";
+        authBtn.innerText = "Register Now";
+        tabRegister.className = "flex-1 py-2 rounded-xl text-sm font-bold bg-white shadow-sm text-purple-600";
+        tabLogin.className = "flex-1 py-2 rounded-xl text-sm font-bold text-gray-500";
+    } else {
+        regFields.classList.add('hidden');
+        authTitle.innerText = "Welcome Back";
+        authBtn.innerText = "Sign In";
+        tabLogin.className = "flex-1 py-2 rounded-xl text-sm font-bold bg-white shadow-sm text-purple-600";
+        tabRegister.className = "flex-1 py-2 rounded-xl text-sm font-bold text-gray-500";
+    }
+}
+
+async function processAuth(e) {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-pass').value;
+    const name = document.getElementById('auth-name').value;
+
+    if (authMode === 'register') {
+        const { data, error } = await db.auth.signUp({
+            email, password, options: { data: { full_name: name } }
+        });
+        if (error) alert(error.message);
+        else showWelcomeModal();
+    } else {
+        const { data, error } = await db.signInWithPassword({ email, password });
+        if (error) alert(error.message);
+        else {
+            loginUser(data.user.user_metadata.full_name);
+            fetchLogs();
+        }
+    }
+}
+
+function loginUser(name) {
+    isLoggedIn = true;
+    document.getElementById('user-display').classList.remove('hidden');
+    document.getElementById('user-name-text').innerText = name;
+    navigateTo('tracker');
+}
+
+function togglePasswordVisibility() {
+    const passInput = document.getElementById('auth-pass');
+    const passIcon = document.getElementById('pass-icon');
+    if (passInput.type === 'password') {
+        passInput.type = 'text';
+        passIcon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        passInput.type = 'password';
+        passIcon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+
+// --- MODAL ---
+function showWelcomeModal() {
+    document.getElementById('welcome-modal').classList.remove('hidden');
+    document.getElementById('welcome-modal').classList.add('flex');
+}
+
+function confirmWelcome() {
+    document.getElementById('welcome-modal').classList.add('hidden');
+    document.getElementById('welcome-modal').classList.remove('flex');
+    toggleAuth('login');
+}
+
+// --- TRACKER LOGIC ---
+async function fetchLogs() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await db
+        .from('ojt_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false });
+
+    if (!error) {
+        // Map data including the 'id' for deletion
+        logs = data.map(d => ({
+            id: d.id,
+            date: d.date,
+            start: d.clock_in,
+            end: d.clock_out,
+            duration: parseFloat(d.duration_hours)
+        }));
+        renderLogs();
+    }
+}
+
+async function saveLog(date, start, end, duration) {
+    const { data: { user } } = await db.auth.getUser();
+    const { error } = await db.from('ojt_logs').insert([
+        { user_id: user.id, date, clock_in: start, clock_out: end, duration_hours: duration }
+    ]);
+    if (error) alert(error.message);
+    else fetchLogs();
+}
+
+// NEW: Delete Function
+async function deleteLog(id) {
+    if (!confirm("Are you sure you want to delete this log?")) return;
+
+    const { error } = await db
+        .from('ojt_logs')
+        .delete()
+        .eq('id', id);
+
+    if (error) alert("Error deleting log: " + error.message);
+    else fetchLogs(); // Refresh the table
+}
+
+function toggleClock() {
+    const btn = document.getElementById('clock-btn');
+    const timer = document.getElementById('live-timer');
+
+    if (!isClockedIn) {
+        isClockedIn = true;
+        clockInTime = new Date();
+        btn.innerHTML = '<i class="fa-solid fa-stop mr-2"></i> Clock Out';
+        btn.className = "bg-red-500 text-white px-10 py-4 rounded-2xl font-bold shadow-lg transform active:scale-95 transition-all";
+        timerInterval = setInterval(() => {
+            const diff = new Date() - clockInTime;
+            timer.innerText = new Date(diff).toISOString().substr(11, 8);
+        }, 1000);
+    } else {
+        isClockedIn = false;
+        clearInterval(timerInterval);
+        const clockOutTime = new Date();
+        const duration = (clockOutTime - clockInTime) / (1000 * 60 * 60);
+        saveLog(
+            clockInTime.toISOString().split('T')[0],
+            clockInTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+            clockOutTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+            duration
+        );
+        btn.innerHTML = '<i class="fa-solid fa-play mr-2"></i> Clock In';
+        btn.className = "bg-emerald-500 text-white px-10 py-4 rounded-2xl font-bold shadow-lg transform active:scale-95 transition-all";
+        timer.innerText = "00:00:00";
+    }
+}
+
+function handleManualEntry(e) {
+    e.preventDefault();
+    const date = document.getElementById('m-date').value;
+    const startStr = document.getElementById('m-in').value;
+    const endStr = document.getElementById('m-out').value;
+
+    const start = new Date(`2000-01-01T${startStr}`);
+    const end = new Date(`2000-01-01T${endStr}`);
+    let duration = (end - start) / (1000 * 60 * 60);
+    if (duration < 0) duration += 24;
+
+    saveLog(date, startStr, endStr, duration);
+    e.target.reset();
+}
+
+function renderLogs() {
+    const body = document.getElementById('log-body');
+    const totalDisplay = document.getElementById('total-hours');
+    const emptyState = document.getElementById('empty-state');
+    body.innerHTML = '';
+    let total = 0;
+
+    if (logs.length > 0) emptyState.classList.add('hidden');
+    else emptyState.classList.remove('hidden');
+
+    logs.forEach(item => {
+        total += item.duration;
+        body.innerHTML += `
+            <tr class="hover:bg-gray-50 transition-colors group">
+                <td class="px-6 py-4 font-semibold text-gray-700">${item.date}</td>
+                <td class="px-6 py-4 text-gray-500">${item.start}</td>
+                <td class="px-6 py-4 text-gray-500">${item.end}</td>
+                <td class="px-6 py-4 text-right font-bold text-purple-600">${item.duration.toFixed(2)} hrs</td>
+                <td class="px-6 py-4 text-right">
+                    <button onclick="deleteLog('${item.id}')" class="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            </tr>`;
+    });
+    totalDisplay.innerText = total.toFixed(2);
+}
+
+window.onload = async () => {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+        loginUser(session.user.user_metadata.full_name);
+        fetchLogs();
+    }
+};
+    </script>
+</body>
+</html>
